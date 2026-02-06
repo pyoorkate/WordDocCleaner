@@ -11,8 +11,11 @@ If folks have worked on it who have their language set to different locales, you
 
 This script will take a docx format file and:
 - Identify the styles in it, then recursively let you change them to: Normal, Heading1 or Heading2 (or ignore them)
+- Remove color formatting characteristics
 - Reset the default font back to the default
 - Force the dictionary to the one you specify
+- Identify and allow you to reset formatting on isolated punctuation/characters (e.g. accidentally italicised commas)
+- Strip out metadata
 
 At least that's the theory.
 
