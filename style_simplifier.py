@@ -57,12 +57,18 @@ def deep_clean_docx():
             # B. Save specific formatting we want to keep
             b, i, u, s = run.bold, run.italic, run.underline, run.font.strike
 
-            # C. Sledgehammer: Remove all font face and size tags from XML
+            # C. Sledgehammer: Remove all font face, size, and color tags from XML
             rPr = run._element.get_or_add_rPr()
-            # Targets: Fonts (Latin/CS/EA) and Font Sizes
+            
+            # We target the most common override tags
             tags_to_kill = [
-                qn('w:rFonts'), qn('w:sz'), qn('w:szCs'),
-                qn('w:rFonts'), qn('w:ascii'), qn('w:hAnsi'), qn('w:cs')
+                qn('w:rFonts'),   # Font faces
+                qn('w:sz'),       # Font size
+                qn('w:szCs'),     # Complex script font size
+                qn('w:color'),    # Manual font coloring
+                qn('w:ascii'),    # Latin font
+                qn('w:hAnsi'),    # High-Ansi font
+                qn('w:cs')        # Complex script font
             ]
             for tag in tags_to_kill:
                 element = rPr.find(tag)
@@ -85,3 +91,4 @@ def deep_clean_docx():
 
 if __name__ == "__main__":
     deep_clean_docx()
+
