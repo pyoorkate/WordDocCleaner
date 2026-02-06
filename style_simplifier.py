@@ -4,10 +4,10 @@ from docx import Document
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
-print("\n=============================")
-print(".docx file formatting cleaner")
-print("=============================")
-print("\nStrips formatting from docx files resetting the selected styles to defaults.\n Preserves: italic, underline, bold, strikeout. \n Optionally also strips metadata.")
+print("\n==================================")
+print(".docx file formatting cleaner v0.4")
+print("==================================")
+print("\nStrips formatting from docx files resetting the selected styles to defaults.\nPreserves: italic, underline, bold, strikeout. \nOptionally strips metadata.\nOptionally identifies isolated characters formatted differently from surrounding characters/punctuation.")
 
 def set_run_language(run, lang_code):
     rPr = run._element.get_or_add_rPr()
@@ -15,6 +15,47 @@ def set_run_language(run, lang_code):
         lang = OxmlElement('w:lang')
         lang.set(qn(attr), lang_code)
         rPr.append(lang)
+
+def review_isolated_formatting(doc):
+    print("\n--- Starting Isolated Formatting Review ---")
+    for para in doc.paragraphs:
+        # We need to track the character position manually
+        current_pos = 0
+        full_text = para.text
+
+        for run in para.runs:
+            clean_text = run.text.strip()
+            run_len = len(run.text)
+
+            # Check for isolated formatting (1 character only)
+            if len(clean_text) == 1:
+                active_formats = []
+                if run.bold: active_formats.append("Bold")
+                if run.italic: active_formats.append("Italic")
+                if run.underline: active_formats.append("Underline")
+                if run.font.strike: active_formats.append("Strikethrough")
+
+                if active_formats:
+                    # Create a window: 30 chars before, 30 chars after
+                    start = max(0, current_pos - 30)
+                    end = min(len(full_text), current_pos + 30)
+
+                    # Highlight the specific character in the context string
+                    before = full_text[start:current_pos]
+                    after = full_text[current_pos + 1:end]
+                    # We wrap the character in [[ ]] so you can see it if it's a space
+                    window = f"{before}[[{run.text}]]{after}"
+
+                    print(f"\nContext: ...{window}...")
+                    print(f"Target: '{run.text}' | Formatting: [{', '.join(active_formats)}]")
+
+                    choice = input("Keep formatting? [y]es / [n]o (revert to plain): ").lower()
+
+                    if choice == 'n':
+                        run.bold = run.italic = run.underline = run.font.strike = False
+                        print("Reverted.")
+
+            current_pos += run_len
 
 def ultimate_clean_docx():
     if len(sys.argv) > 2:
@@ -77,7 +118,13 @@ def ultimate_clean_docx():
             if lang_code:
                 set_run_language(run, lang_code)
 
-    # 3. Strip Metadata
+    # 3 Review isolated characters
+    print("\nWould you like to review isolated formatted characters (e.g., single bold letters)?")
+    review_choice = input("  1: YES, [Enter]: Skip: ")
+    if review_choice == '1':
+        review_isolated_formatting(doc)
+
+    # 4. Strip Metadata
     print("Strip Metadata?")
     choice = input("  1: YES, [Enter]: Skip: ")
     if choice == '1':
