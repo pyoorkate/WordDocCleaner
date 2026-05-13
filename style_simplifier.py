@@ -5,9 +5,9 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 print("\n==================================")
-print(".docx file formatting cleaner v0.4")
+print(".docx file formatting cleaner v0.5")
 print("==================================")
-print("\nStrips formatting from docx files resetting the selected styles to defaults.\nPreserves: italic, underline, bold, strikeout. \nOptionally strips metadata.\nOptionally identifies isolated characters formatted differently from surrounding characters/punctuation.")
+print("\nStrips formatting from docx files resetting the selected styles to defaults.\nPreserves: italic, underline, bold, strikeout. \nOptionally strips metadata.\nOptionally identifies isolated characters formatted differently from surrounding characters/punctuation and extraneous carriage returns.")
 
 def set_run_language(run, lang_code):
     rPr = run._element.get_or_add_rPr()
@@ -118,14 +118,26 @@ def ultimate_clean_docx():
             if lang_code:
                 set_run_language(run, lang_code)
 
-    # 3 Review isolated characters
+    # 3 Remove Empty Paragraphs
+    print("\nRemove empty paragraphs?")
+    rem_choice = input("  1: YES, [Enter]: Skip: ")
+    if rem_choice == '1':
+        # We use list() to create a static list because we are 
+        # modifying the document structure while iterating
+        for para in list(doc.paragraphs):
+            if not para.text.strip():
+                p = para._element
+                p.getparent().remove(p)
+                p._p = p._element = None
+    
+    # 4 Review isolated characters
     print("\nWould you like to review isolated formatted characters (e.g., single bold letters)?")
     review_choice = input("  1: YES, [Enter]: Skip: ")
     if review_choice == '1':
         review_isolated_formatting(doc)
 
-    # 4. Strip Metadata
-    print("Strip Metadata?")
+    # 5 Strip Metadata
+    print("\nStrip Metadata?")
     choice = input("  1: YES, [Enter]: Skip: ")
     if choice == '1':
         core_props = doc.core_properties
