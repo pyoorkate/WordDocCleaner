@@ -84,7 +84,17 @@ def ultimate_clean_docx():
     # 2. Process Paragraphs
     for para in doc.paragraphs:
         if para.style.name in style_map:
-            para.style = doc.styles[style_map[para.style.name]]
+            target_style = style_map[para.style.name]
+            try:
+                # Attempt to apply the style
+                para.style = doc.styles[target_style]
+            except KeyError:
+                # If 'Heading 1' fails, try 'Heading1' (internal ID)
+                try:
+                    alt_name = target_style.replace(" ", "")
+                    para.style = doc.styles[alt_name]
+                except KeyError:
+                    print(f"Warning: Could not find style '{target_style}' in this document's gallery. Skipping style change for this paragraph.")
 
         # Reset Paragraph geometry
         pf = para.paragraph_format
