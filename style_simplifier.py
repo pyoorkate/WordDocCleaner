@@ -88,11 +88,13 @@ def ultimate_clean_docx():
         elif choice == '3': style_map[name] = 'Heading 2'
 
     # 2. Process Paragraphs
+    spin_count = 0
     for para in doc.paragraphs:
+        spin_count = spin_count + 1
         print("Processing paragraph styles...")
         # Show that we're doing something - update the spinner on the current line
         # \r moves the cursor to the start of the line, end="" prevents a newline
-        sys.stdout.write(f"\r {spinner[para % len(spinner)]} Analyzing.")
+        sys.stdout.write(f"\r {spinner[spin_count % len(spinner)]} Analyzing.")
         sys.stdout.flush()
         if para.style.name in style_map:
             target_style = style_map[para.style.name]
@@ -141,7 +143,9 @@ def ultimate_clean_docx():
     if rem_choice == '1':
         # We use list() to create a static list because we are 
         # modifying the document structure while iterating
+        spin_count = 0
         for para in list(doc.paragraphs):
+            spin_count = spin_count + 1
             print("Processing paragraph styles...")
             # Show that we're doing something - update the spinner on the current line
             # \r moves the cursor to the start of the line, end="" prevents a newline
