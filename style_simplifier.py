@@ -4,6 +4,8 @@ from docx import Document
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
+spinner = ["/", "-", "\\", "|"] # Define the spinner frames
+
 print("\n==================================")
 print(".docx file formatting cleaner v0.5")
 print("==================================")
@@ -24,6 +26,10 @@ def review_isolated_formatting(doc):
         full_text = para.text
 
         for run in para.runs:
+            # Show that we're doing something - update the spinner on the current line
+            # \r moves the cursor to the start of the line, end="" prevents a newline
+            sys.stdout.write(f"\r {spinner[i % len(spinner)]} Analyzing: {filename}")
+            sys.stdout.flush()
             clean_text = run.text.strip()
             run_len = len(run.text)
 
@@ -83,18 +89,19 @@ def ultimate_clean_docx():
 
     # 2. Process Paragraphs
     for para in doc.paragraphs:
+        print("Processing paragraph styles...")
+        # Show that we're doing something - update the spinner on the current line
+        # \r moves the cursor to the start of the line, end="" prevents a newline
+        sys.stdout.write(f"\r {spinner[i % len(spinner)]} Analyzing: {filename}")
+        sys.stdout.flush()
         if para.style.name in style_map:
             target_style = style_map[para.style.name]
-            try:
-                # Attempt to apply the style
+            # Only try to apply if it exists in the document's style gallery
+            if target_style in existing_style_names:
                 para.style = doc.styles[target_style]
-            except KeyError:
-                # If 'Heading 1' fails, try 'Heading1' (internal ID)
-                try:
-                    alt_name = target_style.replace(" ", "")
-                    para.style = doc.styles[alt_name]
-                except KeyError:
-                    print(f"Warning: Could not find style '{target_style}' in this document's gallery. Skipping style change for this paragraph.")
+            else:
+                # If it doesn't exist, we just leave it alone rather than crashing
+                pass
 
         # Reset Paragraph geometry
         pf = para.paragraph_format
@@ -135,6 +142,11 @@ def ultimate_clean_docx():
         # We use list() to create a static list because we are 
         # modifying the document structure while iterating
         for para in list(doc.paragraphs):
+            print("Processing paragraph styles...")
+            # Show that we're doing something - update the spinner on the current line
+            # \r moves the cursor to the start of the line, end="" prevents a newline
+            sys.stdout.write(f"\r {spinner[i % len(spinner)]} Analyzing: {filename}")
+            sys.stdout.flush()
             if not para.text.strip():
                 p = para._element
                 p.getparent().remove(p)
