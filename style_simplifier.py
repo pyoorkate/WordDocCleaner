@@ -78,14 +78,15 @@ def ultimate_clean_docx():
     lang_code = input("\nEnter language code (e.g., en-US) or Enter to skip: ").strip()
 
     # 1. Map styles
+    existing_style_names = {s.name for s in doc.styles}
     used_styles = {p.style.name for p in doc.paragraphs}
     style_map = {}
     for name in sorted(used_styles):
         print(f"Style: '{name}'")
-        choice = input("  1: Normal, 2: Heading 1, 3: Heading 2, [Enter]: Skip: ")
-        if choice == '1': style_map[name] = 'Normal'
-        elif choice == '2': style_map[name] = 'Heading 1'
-        elif choice == '3': style_map[name] = 'Heading 2'
+        choice = input("  1: Heading 1, 2: Heading 2, 3: Normal, OR [Enter]: Skip: ")
+        if choice == '3': style_map[name] = 'Normal'
+        elif choice == '1': style_map[name] = 'Heading 1'
+        elif choice == '2': style_map[name] = 'Heading 2'
 
     # 2. Process Paragraphs
     spin_count = 0
