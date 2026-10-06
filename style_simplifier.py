@@ -7,9 +7,9 @@ from docx.oxml import OxmlElement
 spinner = ["/", "-", "\\", "|"]
 
 print("\n==================================")
-print(".docx file formatting cleaner v0.8")
+print(".docx file formatting cleaner v0.9")
 print("==================================")
-print("\nStrips formatting, resets styles, and preserves core formatting.\nIncludes: Metadata stripping, isolated char review, and empty line removal.")
+print("\nStrips formatting, resets styles, and preserves core formatting.\nIncludes: Metadata stripping, isolated character style review, and empty line removal.")
 
 def set_run_language(run, lang_code):
     rPr = run._element.get_or_add_rPr()
@@ -35,6 +35,10 @@ def review_isolated_formatting(doc):
                 if run.italic: active_formats.append("Italic")
                 if run.underline: active_formats.append("Underline")
                 if run.font.strike: active_formats.append("Strikethrough")
+                if run.font.name: active_formats.append(f"Font ({run.font.name})")
+                if run.font.superscript: active_formats.append("Superscript")
+                if run.font.subscript: active_formats.append("Subscript")
+                if run.font.small_caps: active_formats.append("Small Caps")
 
                 if active_formats:
                     start = max(0, current_pos - 30)
@@ -44,9 +48,10 @@ def review_isolated_formatting(doc):
                     window = f"{before}[[{run.text}]]{after}"
                     print(f"\nContext: ...{window}...")
                     print(f"Target: '{run.text}' | Formatting: [{', '.join(active_formats)}]")
-                    choice = input("Keep formatting? [y]es / [n]o (revert to plain): ").lower()
+                    choice = input("Keep formatting for this section [y]es / [n]o (strip formatting): ").lower()
                     if choice == 'n':
-                        run.bold = run.italic = run.underline = run.font.strike = False
+                        run.bold = run.italic = run.underline = run.font.strike = run.font.superscript = run.font.subscript = run.font.small_caps = False
+                        run.font.name = None
             current_pos += run_len
 
 def ultimate_clean_docx():
@@ -75,6 +80,29 @@ def ultimate_clean_docx():
 
     # 2. Process Paragraphs
     print("\nProcessing paragraph styles and formatting...")
+    strip_font = False
+    strip_allcaps = False
+    strip_smallcaps = False
+    strip_super_subscript = False
+    strip_underline = False
+
+
+    choice = input("  Keep all caps sections [y]es / [n]o (strip all caps) ")
+    if choice == 'n':
+        strip_allcaps = True
+    choice = input("  Keep small caps sections [y]es / [n]o (strip small caps) ")
+    if choice == 'n':
+        strip_smallcaps = True
+    choice = input("  Keep font selections [y]es / [n]o (strip fonts) ")
+    if choice == 'n':
+        strip_font = True
+    choice = input("  Keep super/subscript sections [y]es / [n]o (strip super/subscript) ")
+    if choice == 'n':
+        strip_super_subscript = True
+    choice = input("  Keep underlined sections [y]es / [n]o (strip underline) ")
+    if choice == 'n':
+        strip_underline = True
+
     for i, para in enumerate(doc.paragraphs):
         sys.stdout.write(f"\r {spinner[i % len(spinner)]} Processing...")
         sys.stdout.flush()
@@ -89,7 +117,7 @@ def ultimate_clean_docx():
                 try:
                     para.style = doc.styles[target_style.replace(" ", "")]
                 except KeyError:
-                    pass 
+                    pass
 
         # Reset Geometry
         pf = para.paragraph_format
@@ -105,11 +133,36 @@ def ultimate_clean_docx():
             b, i, u, s = run.bold, run.italic, run.underline, run.font.strike
             rPr = run._element.get_or_add_rPr()
             tags_to_kill = [
-                qn('w:rFonts'), qn('w:sz'), qn('w:szCs'), qn('w:color'), 
-                qn('w:highlight'), qn('w:shd'), qn('w:u'), 
-                qn('w:ascii'), qn('w:hAnsi'), qn('w:cs')
+                qn('w:sz'), qn('w:szCs'), qn('w:color'),
+                qn('w:highlight'), qn('w:shd'), qn('w:cs')
             ]
+            if strip_font == True:
+                tags_to_kill.extend([
+                    qn('w:rFonts')
+                ])
+            if strip_allcaps == True:
+                tags_to_kill.extend([
+                    qn('w:caps')
+                ])
+            if strip_smallcaps == True:
+                tags_to_kill.extend([
+                    qn('w:smallCaps')
+                ])
+            if strip_super_subscript == True:
+                tags_to_kill.extend([
+                    qn('w:vertAlign')
+                ])
+            if strip_underline == True:
+                tags_to_kill.extend([
+                    qn('w:u')
+                ])
+                u = False
+
+            """Previously this also stripped out high ascii / ansi values
+            which I'm not sure was a great plan, so I'm removing it for the
+            moment. The XML for those are: qn('w:ascii'), qn('w:hAnsi'), """
             for tag in tags_to_kill:
+
                 element = rPr.find(tag)
                 if element is not None:
                     rPr.remove(element)
@@ -129,7 +182,7 @@ def ultimate_clean_docx():
             if not para.text.strip():
                 p = para._element
                 p.getparent().remove(p)
-    
+
     # 4. Review isolated characters
     print("\n\nWould you like to review isolated formatted characters?")
     review_choice = input("  1: YES, [Enter]: Skip: ")
@@ -145,7 +198,7 @@ def ultimate_clean_docx():
         core_props.last_modified_by = core_props.title = ""
 
     doc.save(output_file)
-    print(f"\nDocument fully scrubbed and saved to: {output_file}")
+    print(f"\nDocument scrubbed and saved to: {output_file}")
 
 if __name__ == "__main__":
     ultimate_clean_docx()
